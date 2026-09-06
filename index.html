@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math Treasure Island</title>
+    <style>
+        /* CSS VARIABLES & RESET */
+        :root {
+            --primary: #00a8ff;
+            --secondary: #fbc531;
+            --danger: #e84118;
+            --success: #4cd137;
+            --dark: #2f3640;
+            --light: #f5f6fa;
+            --bg-ocean: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%);
+            --island-color: #44bd32;
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: var(--font-main);
+            background-color: #1e272e;
+            color: var(--dark);
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        /* APP CONTAINER (MOBILE FIRST) */
+        #app {
+            width: 100%;
+            max-width: 420px; /* HP Size limits for desktop view */
+            height: 100vh;
+            max-height: 900px;
+            background: var(--bg-ocean);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* UTILS */
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+        .title-shadow { text-shadow: 2px 2px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff; }
+        
+        /* BUTTONS */
+        .btn {
+            background: var(--secondary); border: none; border-bottom: 4px solid #e1b12c;
+            border-radius: 12px; padding: 15px 20px; font-size: 1.1rem; font-weight: bold;
+            color: var(--dark); cursor: pointer; transition: transform 0.1s, filter 0.1s;
+            width: 100%; display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .btn:active { transform: translateY(4px); border-bottom: 0px; margin-top: 4px; margin-bottom: -4px; }
+        .btn-primary { background: var(--primary); border-bottom-color: #0097e6; color: white; }
+        .btn-danger { background: var(--danger); border-bottom-color: #c23616; color: white; }
+        .btn-success { background: var(--success); border-bottom-color: #44bd32; color: white; }
+        .btn-disabled { background: #dcdde1; border-bottom-color: #7f8fa6; color: #7f8fa6; pointer-events: none; }
+
+        /* SCREENS */
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            padding: 20px; display: flex; flex-direction: column;
+            background: var(--bg-ocean); overflow-y: auto; z-index: 10;
+        }
+
+        /* HEADER (Top Bar) */
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.9); padding: 10px 15px; border-radius: 15px;
+            margin-bottom: 15px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        .stats-group { display: flex; gap: 15px; align-items: center; font-size: 1.1rem; }
+        
+        /* LOGIN SCREEN */
+        #login-screen { justify-content: center; background: linear-gradient(135deg, #fbc531, #e1b12c); }
+        .login-box { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .login-box h1 { font-size: 2rem; color: var(--danger); margin-bottom: 10px; line-height: 1.2; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 5px; }
+        .input-group input { width: 100%; padding: 12px; border: 2px solid #dcdde1; border-radius: 10px; font-size: 1rem; }
+        .input-group input:focus { border-color: var(--primary); outline: none; }
+
+        /* MAP SCREEN */
+        #map-screen { padding: 0; background: #81ecec url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><path d="M10 10 Q 50 50 90 10" stroke="rgba(255,255,255,0.3)" stroke-width="2" fill="none" stroke-dasharray="5,5"/></svg>'); }
+        .map-container { position: relative; width: 100%; height: 100%; min-height: 800px; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+        .map-node {
+            width: 80px; height: 80px; background: var(--island-color); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; font-size: 2rem;
+            position: relative; margin: 20px 0; border: 4px solid #fff; box-shadow: 0 10px 0 #27ae60, 0 15px 10px rgba(0,0,0,0.3);
+            cursor: pointer; z-index: 2; transition: transform 0.2s;
+        }
+        .map-node:active { transform: scale(0.95); }
+        .map-node.locked { background: #7f8fa6; box-shadow: 0 10px 0 #353b48; filter: grayscale(100%); cursor: not-allowed; }
+        .map-node.boss { background: var(--danger); box-shadow: 0 10px 0 #c23616; border-radius: 20px; }
+        .map-node-label { position: absolute; top: -30px; background: white; padding: 4px 10px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .map-path { width: 4px; height: 40px; background: white; border-left: 4px dotted var(--dark); margin: -20px 0; z-index: 1; }
+        
+        /* GAME SCREEN */
+        .progress-container { width: 100%; background: #dcdde1; height: 10px; border-radius: 5px; margin-bottom: 10px; overflow: hidden;}
+        .progress-bar { height: 100%; background: var(--success); width: 0%; transition: width 0.3s; }
+        .timer-bar-container { width: 100%; height: 15px; background: #fff; border-radius: 10px; border: 2px solid var(--dark); overflow: hidden; margin-bottom: 20px; }
+        .timer-bar { height: 100%; background: var(--danger); width: 100%; transform-origin: left; transition: width 1s linear; }
+        
+        .question-card { background: white; padding: 25px 20px; border-radius: 20px; box-shadow: 0 8px 15px rgba(0,0,0,0.1); margin-bottom: 20px; font-size: 1.4rem; font-weight: bold; text-align: center; line-height: 1.4; flex-grow: 0; }
+        
+        /* MULTIPLE CHOICE */
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
+        .option-btn { background: #fff; border: 2px solid var(--primary); border-radius: 15px; padding: 20px 10px; font-size: 1.3rem; font-weight: bold; color: var(--primary); box-shadow: 0 5px 0 var(--primary); transition: all 0.1s; display: flex; justify-content: center; align-items: center;}
+        .option-btn:active { transform: translateY(5px); box-shadow: 0 0 0 var(--primary); }
+        .option-btn.wrong-hidden { opacity: 0; pointer-events: none; }
+
+        /* TAP TO SEQUENCE (ORDERING) */
+        .sequence-container { display: flex; flex-direction: column; gap: 20px; }
+        .seq-pool, .seq-answer { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; min-height: 70px; background: rgba(255,255,255,0.5); padding: 10px; border-radius: 15px; border: 2px dashed #fff; }
+        .seq-item { background: white; padding: 15px 20px; border-radius: 10px; font-size: 1.2rem; font-weight: bold; box-shadow: 0 4px 0 #dcdde1; cursor: pointer; transition: transform 0.1s; border: 2px solid transparent; }
+        .seq-item:active { transform: scale(0.9); }
+        .seq-item.selected { border-color: var(--primary); background: #e0f7fa; }
+
+        /* MATCHING */
+        .match-container { display: flex; justify-content: space-between; gap: 10px; }
+        .match-col { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+        .match-item { background: white; padding: 15px 10px; border-radius: 10px; text-align: center; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 0 #dcdde1; cursor: pointer; transition: 0.2s; border: 2px solid transparent;}
+        .match-item.selected { background: #ffeaa7; border-color: var(--secondary); }
+        .match-item.matched { background: var(--success); color: white; border-color: #27ae60; pointer-events: none; opacity: 0.8; }
+
+        /* POWERUPS */
+        .powerup-tray { display: flex; justify-content: center; gap: 10px; margin-top: auto; padding-top: 15px; }
+        .pu-btn { width: 50px; height: 50px; border-radius: 50%; background: white; border: 2px solid var(--secondary); display: flex; justify-content: center; align-items: center; font-size: 1.5rem; box-shadow: 0 4px 0 #e1b12c; position: relative; }
+        .pu-btn.disabled { filter: grayscale(100%); opacity: 0.5; pointer-events: none; }
+        .pu-badge { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; font-size: 0.7rem; width: 20px; height: 20px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+
+        /* MODALS (Overlay) */
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 100; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box { background: white; padding: 30px 20px; border-radius: 20px; width: 100%; max-width: 350px; text-align: center; transform: translateY(50px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-overlay.active .modal-box { transform: translateY(0); }
+        .modal-icon { font-size: 4rem; margin-bottom: 10px; }
+        .modal-title { font-size: 1.8rem; margin-bottom: 15px; font-weight: bold; }
+        .modal-text { font-size: 1.1rem; line-height: 1.5; margin-bottom: 20px; background: #f1f2f6; padding: 15px; border-radius: 10px; text-align: left;}
+        
+        /* COMBO POPUP */
+        #combo-popup { position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 3rem; font-weight: bold; color: var(--secondary); text-shadow: 0 0 10px #fff, 0 0 20px var(--danger); z-index: 50; pointer-events: none; opacity: 0; transition: all 0.3s; }
+        #combo-popup.show { transform: translate(-50%, -100%) scale(1); opacity: 1; }
+
+        /* PRINT MEDIA QUERY */
+        @media print {
+            body { background: white; display: block; overflow: auto; }
+            #app { max-width: 100%; height: auto; max-height: none; box-shadow: none; background: white; }
+            .screen { position: relative; background: white; color: black; overflow: visible; padding: 0; }
+            .top-bar, .powerup-tray, .btn-print, #map-screen, #game-screen, #login-screen { display: none !important; }
+            #result-screen { display: block !important; padding: 20px; }
+            .result-card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
+            .print-header { text-align: center; border-bottom: 2px solid black; padding-bottom: 10px; margin-bottom: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- UI AUDIO -->
+    <div id="audio-controls" style="position: absolute; top: 10px; right: 10px; z-index: 999;">
+        <button id="btn-sound" class="btn" style="padding: 10px; border-radius: 50%; width: 45px; height: 45px;">🔊</button>
+    </div>
+
+    <!-- 1. LOGIN SCREEN -->
+    <div id="login-screen" class="screen">
+        <div class="text-center" style="margin-bottom: 20px;">
+            <div style="font-size: 5rem;">🏴‍☠️</div>
+            <h1 class="title-shadow" style="color: white; font-size: 2.5rem; line-height: 1;">MATH TREASURE<br>ISLAND</h1>
+        </div>
+        <div class="login-box">
+            <h1>Selamat Datang!</h1>
+            <p style="margin-bottom: 20px; color: #7f8fa6;">Petualang Matematika, masukkan identitasmu:</p>
+            <div class="input-group">
+                <label>Nama Panggilan</label>
+                <input type="text" id="in-name" placeholder="Contoh: Budi" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label>No. Absen</label>
+                <input type="number" id="in-no" placeholder="Contoh: 12">
+            </div>
+            <div class="input-group">
+                <label>Kelas</label>
+                <input type="text" id="in-class" placeholder="Contoh: 6A">
+            </div>
+            <button class="btn btn-primary" onclick="startGame()">🗺️ MULAI PETUALANGAN</button>
+            
+            <button class="btn" onclick="showLeaderboard()" style="margin-top: 15px; background: #f1f2f6; border-bottom-color: #dcdde1;">🏆 Leaderboard</button>
+        </div>
+    </div>
+
+    <!-- 2. MAP SCREEN -->
+    <div id="map-screen" class="screen hidden">
+        <div class="top-bar">
+            <div class="stats-group">
+                <div>🪙 <span id="map-coins">0</span></div>
+                <div>⭐ <span id="map-score">0</span></div>
+            </div>
+            <div style="font-weight: bold; color: var(--primary);" id="map-player">Player</div>
+        </div>
+        
+        <div class="map-container" id="island-map">
+            <!-- Generated via JS -->
+        </div>
+        
+        <div style="position: absolute; bottom: 20px; left: 20px; right: 20px;">
+             <button class="btn btn-danger" onclick="resetProgress()">🔄 Reset Progress</button>
+        </div>
+    </div>
+
+    <!-- 3. GAME SCREEN -->
+    <div id="game-screen" class="screen hidden">
+        <div class="top-bar">
+            <div class="stats-group">
+                <div id="game-lives">❤️❤️❤️</div>
+                <div>🪙 <span id="game-coins">0</span></div>
+            </div>
+            <div class="stats-group">
+                <div>⭐ <span id="game-score">0</span></div>
+                <div style="color: var(--danger); font-weight: bold;">🔥 x<span id="game-combo">0</span></div>
+            </div>
+        </div>
+
+        <div class="progress-container"><div class="progress-bar" id="game-progress"></div></div>
+        <div class="timer-bar-container"><div class="timer-bar" id="game-timer-bar"></div></div>
+        
+        <div class="text-center" style="margin-bottom: 10px; font-weight: bold; color: white;" id="q-counter">Soal 1 / 6</div>
+        
+        <div class="question-card" id="question-text">
+            Loading...
+        </div>
+
+        <!-- Render Area for dynamic question types -->
+        <div id="answer-area" style="width: 100%; flex-grow: 1;"></div>
+
+        <!-- Powerups -->
+        <div class="powerup-tray">
+            <button class="pu-btn" id="pu-compass" onclick="usePowerup('compass')">🧭<div class="pu-badge" id="badge-compass">0</div></button>
+            <button class="pu-btn" id="pu-time" onclick="usePowerup('time')">⏰<div class="pu-badge" id="badge-time">0</div></button>
+            <button class="pu-btn" id="pu-coin" onclick="usePowerup('coin')">💎<div class="pu-badge" id="badge-coin">0</div></button>
+            <button class="pu-btn" id="pu-life" onclick="usePowerup('life')">❤️<div class="pu-badge" id="badge-life">0</div></button>
+        </div>
+    </div>
+
+    <!-- 4. RESULT SCREEN (Printable) -->
+    <div id="result-screen" class="screen hidden" style="background: var(--light);">
+        <div class="print-header hidden" style="display:none;">
+            <h1>LAPORAN HASIL BELAJAR</h1>
+            <h2>MATH TREASURE ISLAND</h2>
+        </div>
+        
+        <div class="text-center" style="margin: 20px 0;">
+            <div style="font-size: 4rem;" id="res-icon">🏆</div>
+            <h1 class="title-shadow" style="color: var(--primary); font-size: 2rem;" id="res-title">PERMAINAN SELESAI</h1>
+        </div>
+        
+        <div class="login-box result-card" style="margin-bottom: 20px;">
+            <table style="width: 100%; text-align: left; margin-bottom: 15px; border-collapse: collapse;">
+                <tr><td style="padding: 5px 0;"><strong>Nama</strong></td><td>: <span id="res-name"></span></td></tr>
+                <tr><td style="padding: 5px 0;"><strong>No/Kelas</strong></td><td>: <span id="res-kelas"></span></td></tr>
+                <tr><td style="padding: 5px 0;"><strong>Predikat</strong></td><td>: <span id="res-predikat" style="color: var(--primary); font-weight: bold;"></span></td></tr>
+            </table>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                <div style="background: #f1f2f6; padding: 10px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 1.5rem;">⭐</div><strong id="res-score">0</strong> Poin
+                </div>
+                <div style="background: #f1f2f6; padding: 10px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 1.5rem;">🪙</div><strong id="res-coins">0</strong> Koin
+                </div>
+                <div style="background: #e8f5e9; padding: 10px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 1.5rem;">✅</div><strong id="res-correct">0</strong> Benar
+                </div>
+                <div style="background: #ffebee; padding: 10px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 1.5rem;">❌</div><strong id="res-wrong">0</strong> Salah
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-bottom: 15px;">
+                <strong>Koleksi Harta:</strong><br>
+                <div id="res-collection" style="font-size: 1.5rem; margin-top: 5px;"></div>
+            </div>
+            
+            <button class="btn btn-primary btn-print" onclick="window.print()" style="margin-bottom: 10px;">🖨️ CETAK / SIMPAN PDF</button>
+            <button class="btn btn-print" onclick="location.reload()">🏠 Kembali ke Beranda</button>
+        </div>
+    </div>
+    
+    <!-- LEADERBOARD SCREEN -->
+    <div id="leaderboard-screen" class="screen hidden">
+        <div class="top-bar">
+            <h2>🏆 Top Hunters</h2>
+            <button class="btn" style="width: auto; padding: 5px 15px;" onclick="hideLeaderboard()">X</button>
+        </div>
+        <div class="login-box" id="lb-container" style="flex-grow: 1; overflow-y: auto;">
+            <!-- Injected via JS -->
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <!-- Explanation Modal -->
+    <div class="modal-overlay" id="modal-feedback">
+        <div class="modal-box">
+            <div class="modal-icon" id="fb-icon">🎉</div>
+            <div class="modal-title" id="fb-title">BENAR!</div>
+            <div class="modal-text" id="fb-text">Penjelasan disini.</div>
+            <button class="btn btn-primary" id="btn-next-question">LANJUT ➡️</button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal-overlay" id="modal-gameover">
+        <div class="modal-box">
+            <div class="modal-icon">💥</div>
+            <div class="modal-title" style="color: var(--danger);">NYAWA HABIS!</div>
+            <div class="modal-text text-center">Petualanganmu terhenti di sini. Jangan menyerah, ayo coba lagi!</div>
+            <button class="btn btn-primary" onclick="backToMap()">🗺️ KEMBALI KE PETA</button>
+        </div>
+    </div>
+
+    <!-- Island Complete Modal -->
+    <div class="modal-overlay" id="modal-island-complete">
+        <div class="modal-box">
+            <div class="modal-icon">🏝️</div>
+            <div class="modal-title">PULAU SELESAI!</div>
+            <div class="modal-text text-center">
+                Kamu mendapatkan harta:<br>
+                <span id="island-reward" style="font-size: 3rem; display: block; margin: 10px 0;">🪙</span>
+                <strong id="island-bonus"></strong>
+            </div>
+            <button class="btn btn-success" onclick="backToMap()">🗺️ LANJUTKAN</button>
+        </div>
+    </div>
+
+    <div id="combo-popup">COMBO x2!</div>
+</div>
+
+<script>
+    /** --- 1. DATA BANK SOAL (MATEMATIKA) --- */
+    const questionBank = {
+        1: [ // Island 1: Perkalian Pecahan
+            { type: 'mcq', q: '2/3 × 3/4 = ...', options: ['1/2', '2/3', '5/7', '6/12'], answer: '1/2', exp: 'Kalikan pembilang: 2×3 = 6. Kalikan penyebut: 3×4 = 12. Hasil 6/12 disederhanakan menjadi 1/2.' },
+            { type: 'mcq', q: '1/4 × 2/5 = ...', options: ['1/10', '3/9', '2/20', '1/5'], answer: '1/10', exp: '1×2 = 2. 4×5 = 20. Hasil 2/20 disederhanakan dibagi 2 menjadi 1/10.' },
+            { type: 'mcq', q: '3/5 × 5/6 = ...', options: ['1/2', '8/11', '15/30', '1/3'], answer: '1/2', exp: 'Angka 5 pada pembilang dan penyebut bisa dicoret. Sisa 3/6 yang disederhanakan menjadi 1/2.' },
+            { type: 'mcq', q: 'Ibu memiliki 1/2 loyang kue. Adik memakan 1/3 dari kue tersebut. Berapa bagian kue yang dimakan adik?', options: ['1/6', '2/5', '1/5', '1/2'], answer: '1/6', exp: 'Kata "dari" berarti perkalian. 1/2 × 1/3 = (1×1)/(2×3) = 1/6.' },
+            { type: 'mcq', q: '4/7 × 7/8 = ...', options: ['1/2', '11/15', '28/56', '2/8'], answer: '1/2', exp: 'Coret angka 7. Tersisa 4/8, disederhanakan dibagi 4 menjadi 1/2.' },
+            { type: 'mcq', q: 'Ayah membeli 3/4 kg cat. Ayah menggunakan 2/3 bagian cat itu. Berapa kg cat yang digunakan?', options: ['1/2 kg', '5/7 kg', '6/12 kg', '1/4 kg'], answer: '1/2 kg', exp: '3/4 × 2/3. Coret angka 3. Sisa 2/4 = 1/2 kg.' }
+        ],
+        2: [ // Island 2: Pembagian Pecahan
+            { type: 'mcq', q: '3/4 ÷ 1/2 = ...', options: ['3/2', '3/8', '1', '2'], answer: '3/2', exp: 'Ubah jadi perkalian dan balik pecahan kedua: 3/4 × 2/1 = 6/4 = 3/2.' },
+            { type: 'mcq', q: '5/6 ÷ 1/3 = ...', options: ['5/2', '5/18', '2/5', '3'], answer: '5/2', exp: '5/6 × 3/1 = 15/6. Disederhanakan dibagi 3 menjadi 5/2.' },
+            { type: 'mcq', q: '2/5 ÷ 4/5 = ...', options: ['1/2', '8/25', '2', '4/25'], answer: '1/2', exp: '2/5 × 5/4. Coret angka 5. Sisa 2/4 = 1/2.' },
+            { type: 'mcq', q: 'Kakak punya pita panjangnya 1/2 meter, akan dipotong menjadi potongan 1/8 meter. Ada berapa potongan?', options: ['4', '1/16', '1/4', '8'], answer: '4', exp: '1/2 ÷ 1/8 = 1/2 × 8/1 = 8/2 = 4 potongan.' },
+            { type: 'mcq', q: '7/8 ÷ 1/4 = ...', options: ['7/2', '7/32', '28/8', '2/7'], answer: '7/2', exp: '7/8 × 4/1 = 28/8. Disederhanakan dibagi 4 menjadi 7/2.' },
+            { type: 'mcq', q: 'Bibi punya 3/4 liter sirup. Dituang ke gelas masing-masing berisi 1/4 liter. Berapa gelas yang dibutuhkan?', options: ['3', '3/16', '4', '12'], answer: '3', exp: '3/4 ÷ 1/4 = 3/4 × 4/1 = 12/4 = 3 gelas.' }
+        ],
+        3: [ // Island 3: Mengurutkan Pecahan
+            { type: 'order', q: 'Urutkan dari TERKECIL ke TERBESAR', items: ['1/4', '1/2', '3/4'], ans: ['1/4', '1/2', '3/4'], exp: 'Samakan penyebut (4): 1/4 (tetap), 1/2 = 2/4, 3/4 (tetap). Urutan: 1/4, 2/4(1/2), 3/4.' },
+            { type: 'order', q: 'Urutkan dari TERKECIL ke TERBESAR', items: ['1/3', '1/6', '2/3'], ans: ['1/6', '1/3', '2/3'], exp: 'Penyebut 6: 1/6, 1/3(2/6), 2/3(4/6). Urutan: 1/6, 1/3, 2/3.' },
+            { type: 'order', q: 'Urutkan dari TERBESAR ke TERKECIL', items: ['4/5', '1/5', '3/5'], ans: ['4/5', '3/5', '1/5'], exp: 'Penyebut sudah sama, urutkan pembilang dari terbesar: 4, 3, 1.' },
+            { type: 'order', q: 'Urutkan dari TERKECIL ke TERBESAR', items: ['1/2', '3/8', '3/4'], ans: ['3/8', '1/2', '3/4'], exp: 'Penyebut 8: 1/2(4/8), 3/8(tetap), 3/4(6/8). Urutan: 3/8, 4/8(1/2), 6/8(3/4).' },
+            { type: 'match', q: 'Cocokkan pecahan yang senilai!', pairs: [['1/2', '2/4'], ['1/3', '2/6'], ['3/4', '6/8']], exp: 'Pecahan senilai didapat dengan mengalikan pembilang dan penyebut dengan angka yang sama.' },
+            { type: 'order', q: 'Urutkan dari TERBESAR ke TERKECIL', items: ['5/6', '1/2', '1/3'], ans: ['5/6', '1/2', '1/3'], exp: 'Penyebut 6: 5/6, 1/2(3/6), 1/3(2/6). Urutan: 5/6, 1/2, 1/3.' }
+        ],
+        4: [ // Island 4: Mengurutkan Desimal
+            { type: 'order', q: 'Urutkan dari TERKECIL ke TERBESAR', items: ['0,2', '0,5', '0,8'], ans: ['0,2', '0,5', '0,8'], exp: 'Lihat angka di belakang koma. 2 < 5 < 8.' },
+            { type: 'order', q: 'Urutkan dari TERKECIL ke TERBESAR', items: ['0,25', '0,5', '0,75'], ans: ['0,25', '0,5', '0,75'], exp: '0,5 sama dengan 0,50. Urutan: 25 < 50 < 75.' },
+            { type: 'order', q: 'Urutkan dari TERBESAR ke TERKECIL', items: ['1,2', '0,9', '0,45'], ans: ['1,2', '0,9', '0,45'], exp: '1,2 (satu koma) paling besar. Lalu 0,9(0,90) lebih besar dari 0,45.' },
+            { type: 'order', q: 'Urutkan dari TERKECIL ke TERBESAR', items: ['0,05', '0,5', '0,15'], ans: ['0,05', '0,15', '0,5'], exp: '0,5 = 0,50. Urutan: 0,05 < 0,15 < 0,50.' },
+            { type: 'match', q: 'Cocokkan Pecahan dengan Desimalnya!', pairs: [['1/2', '0,5'], ['1/4', '0,25'], ['3/4', '0,75']], exp: '1/2 = 50/100 = 0,5. 1/4 = 25/100 = 0,25. 3/4 = 75/100 = 0,75.' },
+            { type: 'order', q: 'Urutkan dari TERBESAR ke TERKECIL', items: ['2,01', '2,1', '2,11'], ans: ['2,11', '2,1', '2,01'], exp: '2,1 = 2,10. Urutan belakang koma: 11 > 10 > 01.' }
+        ],
+        5: [ // Island 5: Treasure Temple (Campuran & Higher Order)
+            { type: 'mcq', q: '1/2 × 0,5 = ...', options: ['0,25', '1', '0,5', '1/2'], answer: '0,25', exp: '0,5 = 1/2. Maka 1/2 × 1/2 = 1/4. Nilai desimal 1/4 adalah 0,25.' },
+            { type: 'order', q: 'Urutkan dari TERKECIL', items: ['1/4', '0,5', '3/4', '0,8'], ans: ['1/4', '0,5', '3/4', '0,8'], exp: 'Ubah ke desimal: 0,25 ; 0,50 ; 0,75 ; 0,80.' },
+            { type: 'mcq', q: 'Doni punya uang Rp 10.000. Ia memakai 2/5 bagian untuk beli buku. Sisa uangnya?', options: ['Rp 6.000', 'Rp 4.000', 'Rp 5.000', 'Rp 2.000'], answer: 'Rp 6.000', exp: 'Dipakai: 2/5 × 10.000 = 4.000. Sisa: 10.000 - 4.000 = Rp 6.000.' },
+            { type: 'mcq', q: '0,75 ÷ 1/2 = ...', options: ['1,5', '0,375', '1', '1,25'], answer: '1,5', exp: '0,75 = 3/4. Maka 3/4 ÷ 1/2 = 3/4 × 2/1 = 6/4 = 3/2 = 1,5.' },
+            { type: 'match', q: 'Cocokkan Operasi yang Hasilnya Sama!', pairs: [['1/2 × 1/2', '1/4'], ['1 ÷ 2', '0,5'], ['3/4 ÷ 3/4', '1']], exp: 'Setiap bilangan dibagi dirinya sendiri hasilnya 1.' },
+            { type: 'order', q: 'Urutkan dari TERBESAR', items: ['1', '0,9', '4/5', '1/2'], ans: ['1', '0,9', '4/5', '1/2'], exp: 'Ubah desimal: 1,0 ; 0,9 ; 0,8 ; 0,5.' },
+            { type: 'mcq', q: 'Jarak rumah ke sekolah 1,5 km. Andi sudah berjalan 2/3 jarak tersebut. Berapa km lagi ia sampai?', options: ['0,5 km', '1 km', '0,3 km', '1,2 km'], answer: '0,5 km', exp: 'Sudah jalan: 2/3 × 1,5 = 1 km. Sisa: 1,5 - 1 = 0,5 km.' },
+            { type: 'mcq', q: 'Peti Harta Karun Butuh Sandi! (2/3 × 3/4) ÷ 1/2 = ?', options: ['1', '1/2', '1/4', '2'], answer: '1', exp: '(2/3 × 3/4) = 1/2. Lalu 1/2 ÷ 1/2 = 1.' }
+        ]
+    };
+
+    /** --- 2. GAME STATE & AUDIO --- */
+    let gs = {
+        name: '', no: '', kelas: '',
+        unlockedIslands: 1, currentIsland: 1,
+        score: 0, coins: 0, lives: 3,
+        combo: 0, maxCombo: 0, correct: 0, wrong: 0,
+        collection: [],
+        powerups: { compass: 1, time: 1, coin: 1, life: 0 },
+        sound: true
+    };
+    
+    const islandsData = [
+        { id: 1, name: 'Island of Multiplication', reward: '🪙', color: '#44bd32' },
+        { id: 2, name: 'Division Bay', reward: '💎', color: '#0984e3' },
+        { id: 3, name: 'Fraction Forest', reward: '🗝️', color: '#00b894' },
+        { id: 4, name: 'Decimal Volcano', reward: '🧭', color: '#d63031' },
+        { id: 5, name: 'Treasure Temple', reward: '👑', color: '#fdcb6e', isBoss: true }
+    ];
+
+    let currentQuestions = [];
+    let qIndex = 0;
+    let timer;
+    let timeLeft = 30;
+    let doubleCoinActive = false;
+    let isTransitioning = false; // Prevent double clicks
+
+    // Simple Web Audio API Synthesizer (No external files)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTone(freq, type, duration, vol=0.1) {
+        if (!gs.sound) return;
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + duration);
+    }
+    const sounds = {
+        correct: () => { playTone(600, 'sine', 0.1); setTimeout(()=>playTone(800, 'sine', 0.2), 100); },
+        wrong: () => { playTone(300, 'sawtooth', 0.3); },
+        click: () => { playTone(400, 'sine', 0.05); },
+        coin: () => { playTone(1200, 'sine', 0.1, 0.05); },
+        win: () => { [523, 659, 783, 1046].forEach((f,i)=>setTimeout(()=>playTone(f,'square',0.2), i*150)); }
+    };
+
+    document.getElementById('btn-sound').addEventListener('click', function() {
+        gs.sound = !gs.sound;
+        this.innerText = gs.sound ? '🔊' : '🔇';
+        if(gs.sound && audioCtx.state === 'suspended') audioCtx.resume();
+    });
+
+    /** --- 3. INIT & NAVIGATION --- */
+    function initApp() {
+        const saved = localStorage.getItem('mathTreasureState');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if(parsed.name) { gs = {...gs, ...parsed}; showScreen('map-screen'); renderMap(); updateTopBar(); return; }
+            } catch(e) {}
+        }
+        showScreen('login-screen');
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(el => el.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    function startGame() {
+        sounds.click();
+        const name = document.getElementById('in-name').value.trim();
+        const no = document.getElementById('in-no').value.trim();
+        const kls = document.getElementById('in-class').value.trim();
+        
+        if (!name || !no || !kls) return alert('Mohon isi semua data petualang!');
+        
+        gs.name = name; gs.no = no; gs.kelas = kls;
+        saveState();
+        showScreen('map-screen');
+        renderMap();
+        updateTopBar();
+    }
+
+    function saveState() {
+        localStorage.setItem('mathTreasureState', JSON.stringify(gs));
+    }
+
+    function updateTopBar() {
+        document.getElementById('map-coins').innerText = gs.coins;
+        document.getElementById('map-score').innerText = gs.score;
+        document.getElementById('map-player').innerText = gs.name;
+        
+        document.getElementById('game-coins').innerText = gs.coins;
+        document.getElementById('game-score').innerText = gs.score;
+        document.getElementById('game-combo').innerText = gs.combo;
+        document.getElementById('game-lives').innerText = '❤️'.repeat(gs.lives) + '🖤'.repeat(3 - gs.lives);
+        
+        // Update powerup badges
+        ['compass', 'time', 'coin', 'life'].forEach(p => {
+            const b = document.getElementById(`badge-${p}`);
+            b.innerText = gs.powerups[p];
+            document.getElementById(`pu-${p}`).classList.toggle('disabled', gs.powerups[p] === 0);
+        });
+    }
+
+    /** --- 4. MAP SYSTEM --- */
+    function renderMap() {
+        const container = document.getElementById('island-map');
+        container.innerHTML = '';
+        
+        islandsData.forEach((isl, index) => {
+            const isUnlocked = isl.id <= gs.unlockedIslands;
+            const node = document.createElement('div');
+            node.className = `map-node ${!isUnlocked ? 'locked' : ''} ${isl.isBoss ? 'boss' : ''}`;
+            node.style.backgroundColor = isUnlocked ? isl.color : '';
+            node.innerHTML = `
+                <div class="map-node-label">${isl.name}</div>
+                ${!isUnlocked ? '🔒' : (isl.isBoss ? '🏛️' : '🏝️')}
+            `;
+            if (isUnlocked) {
+                node.onclick = () => { sounds.click(); startIsland(isl.id); };
+            }
+            container.appendChild(node);
+            
+            if (index < islandsData.length - 1) {
+                const path = document.createElement('div');
+                path.className = 'map-path';
+                container.appendChild(path);
+            }
+        });
+        
+        // Scroll map to bottom (start point is at bottom visually if we design it that way, but let's just show top)
+        container.scrollTop = 0;
+    }
+
+    /** --- 5. GAME ENGINE --- */
+    function startIsland(id) {
+        if(gs.lives <= 0) gs.lives = 3; // Refill if they came from game over
+        gs.currentIsland = id;
+        currentQuestions = [...questionBank[id]].sort(() => Math.random() - 0.5); // Shuffle
+        qIndex = 0;
+        showScreen('game-screen');
+        updateTopBar();
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        if (qIndex >= currentQuestions.length) return completeIsland();
+        
+        isTransitioning = false;
+        doubleCoinActive = false;
+        document.getElementById('q-counter').innerText = `Soal ${qIndex + 1} / ${currentQuestions.length}`;
+        document.getElementById('game-progress').style.width = `${(qIndex / currentQuestions.length) * 100}%`;
+        
+        const qData = currentQuestions[qIndex];
+        document.getElementById('question-text').innerHTML = qData.q;
+        
+        const area = document.getElementById('answer-area');
+        area.innerHTML = '';
+        
+        if (qData.type === 'mcq') renderMCQ(qData, area);
+        else if (qData.type === 'order') renderOrder(qData, area);
+        else if (qData.type === 'match') renderMatch(qData, area);
+        
+        startTimer();
+    }
+
+    // --- MCQ ---
+    function renderMCQ(qData, area) {
+        const grid = document.createElement('div');
+        grid.className = 'options-grid';
+        let options = [...qData.options].sort(() => Math.random() - 0.5);
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => handleAnswer(opt === qData.answer, btn);
+            grid.appendChild(btn);
+        });
+        area.appendChild(grid);
+    }
+
+    // --- ORDERING (Tap to sequence) ---
+    let orderSelection = [];
+    function renderOrder(qData, area) {
+        orderSelection = [];
+        const container = document.createElement('div');
+        container.className = 'sequence-container';
+        
+        const poolDiv = document.createElement('div'); poolDiv.className = 'seq-pool';
+        const ansDiv = document.createElement('div'); ansDiv.className = 'seq-answer';
+        
+        const submitBtn = document.createElement('button');
+        submitBtn.className = 'btn btn-primary'; submitBtn.innerText = '✅ PERIKSA';
+        submitBtn.style.marginTop = '20px';
+        
+        let items = [...qData.items].sort(() => Math.random() - 0.5);
+        
+        function updateUI() {
+            poolDiv.innerHTML = '<div style="width:100%; text-align:center; font-size:0.9rem; color:#666;">Pilih dari sini:</div>';
+            ansDiv.innerHTML = '<div style="width:100%; text-align:center; font-size:0.9rem; color:#666;">Urutan jawabanmu:</div>';
+            
+            items.forEach((item, idx) => {
+                const el = document.createElement('div'); el.className = 'seq-item'; el.innerText = item;
+                el.onclick = () => { sounds.click(); items.splice(idx,1); orderSelection.push(item); updateUI(); };
+                poolDiv.appendChild(el);
+            });
+            
+            orderSelection.forEach((item, idx) => {
+                const el = document.createElement('div'); el.className = 'seq-item selected'; el.innerText = item;
+                el.onclick = () => { sounds.click(); orderSelection.splice(idx,1); items.push(item); updateUI(); };
+                ansDiv.appendChild(el);
+            });
+        }
+        
+        submitBtn.onclick = () => {
+            if(orderSelection.length !== qData.ans.length) return alert('Lengkapi urutan dulu!');
+            const isCorrect = JSON.stringify(orderSelection) === JSON.stringify(qData.ans);
+            handleAnswer(isCorrect, submitBtn);
+        };
+        
+        container.appendChild(ansDiv); container.appendChild(poolDiv); container.appendChild(submitBtn);
+        area.appendChild(container);
+        updateUI();
+    }
+
+    // --- MATCHING ---
+    let matchSelection = null;
+    let matchedPairs = 0;
+    function renderMatch(qData, area) {
+        matchedPairs = 0;
+        const container = document.createElement('div'); container.className = 'match-container';
+        const col1 = document.createElement('div'); col1.className = 'match-col';
+        const col2 = document.createElement('div'); col2.className = 'match-col';
+        
+        let lefts = qData.pairs.map(p => ({text: p[0], pair: p[1], side: 'L'})).sort(() => Math.random()-0.5);
+        let rights = qData.pairs.map(p => ({text: p[1], pair: p[0], side: 'R'})).sort(() => Math.random()-0.5);
+        
+        function handleMatchClick(el, data) {
+            if(el.classList.contains('matched')) return;
+            sounds.click();
+            
+            if(!matchSelection) {
+                matchSelection = {el, data};
+                el.classList.add('selected');
+            } else {
+                if(matchSelection.data.side === data.side) {
+                    matchSelection.el.classList.remove('selected');
+                    matchSelection = {el, data};
+                    el.classList.add('selected');
+                } else {
+                    // Check match
+                    if(matchSelection.data.pair === data.text || matchSelection.data.text === data.pair) {
+                        sounds.coin();
+                        el.classList.add('matched'); matchSelection.el.classList.add('matched');
+                        el.classList.remove('selected'); matchSelection.el.classList.remove('selected');
+                        matchedPairs++;
+                        if(matchedPairs === qData.pairs.length) {
+                            setTimeout(() => handleAnswer(true, null), 500);
+                        }
+                    } else {
+                        sounds.wrong();
+                        el.style.background = '#ff7675'; matchSelection.el.style.background = '#ff7675';
+                        setTimeout(() => {
+                            el.style.background = ''; matchSelection.el.style.background = '';
+                            el.classList.remove('selected'); matchSelection.el.classList.remove('selected');
+                        }, 500);
+                    }
+                    matchSelection = null;
+                }
+            }
+        }
+        
+        lefts.forEach(d => {
+            const el = document.createElement('div'); el.className = 'match-item'; el.innerText = d.text;
+            el.onclick = () => handleMatchClick(el, d); col1.appendChild(el);
+        });
+        rights.forEach(d => {
+            const el = document.createElement('div'); el.className = 'match-item'; el.innerText = d.text;
+            el.onclick = () => handleMatchClick(el, d); col2.appendChild(el);
+        });
+        
+        container.appendChild(col1); container.appendChild(col2);
+        area.appendChild(container);
+    }
+
+    // --- TIMER ---
+    function startTimer() {
+        clearInterval(timer);
+        timeLeft = 30;
+        const bar = document.getElementById('game-timer-bar');
+        bar.style.transition = 'none'; bar.style.width = '100%'; bar.style.background = 'var(--success)';
+        
+        setTimeout(() => {
+            bar.style.transition = 'width 1s linear';
+            timer = setInterval(() => {
+                timeLeft--;
+                const pct = (timeLeft / 30) * 100;
+                bar.style.width = `${pct}%`;
+                if(timeLeft <= 10) bar.style.background = 'var(--danger)';
+                else if(timeLeft <= 20) bar.style.background = 'var(--secondary)';
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    handleAnswer(false, null, true); // Timeout
+                }
+            }, 1000);
+        }, 50);
+    }
+
+    // --- LOGIC ---
+    function handleAnswer(isCorrect, btnEl = null, isTimeout = false) {
+        if (isTransitioning) return;
+        isTransitioning = true;
+        clearInterval(timer);
+        
+        const qData = currentQuestions[qIndex];
+        
+        if (isCorrect) {
+            sounds.correct();
+            if(btnEl) { btnEl.style.background = 'var(--success)'; btnEl.style.color = 'white'; }
+            
+            gs.correct++;
+            gs.combo++;
+            if (gs.combo > gs.maxCombo) gs.maxCombo = gs.combo;
+            
+            // Calc Score
+            let pts = 100 + (timeLeft > 20 ? 25 : 0);
+            if(gs.combo >= 5) { pts += 100; showComboAnim(5); }
+            else if(gs.combo >= 3) { pts += 50; showComboAnim(3); }
+            else if(gs.combo > 1) { showComboAnim(gs.combo); }
+            
+            gs.score += pts;
+            let earnedCoins = 10 * (doubleCoinActive ? 2 : 1);
+            gs.coins += earnedCoins;
+            sounds.coin();
+            
+            showFeedback('🎉 BENAR!', `+${pts} Poin | +${earnedCoins} Koin<br><br><b>Pembahasan:</b><br>${qData.exp}`, true);
+        } else {
+            sounds.wrong();
+            if(btnEl && !isTimeout) { btnEl.style.background = 'var(--danger)'; btnEl.style.color = 'white'; }
+            
+            gs.wrong++;
+            gs.combo = 0;
+            gs.lives--;
+            
+            const reason = isTimeout ? 'WAKTU HABIS!' : 'SALAH!';
+            let corrAns = qData.ans ? qData.ans.join(' ➡️ ') : qData.answer;
+            if(!corrAns && qData.type==='match') corrAns = "Pasangan harus tepat.";
+            
+            showFeedback(`💡 ${reason}`, `Jawaban benar:<br><b>${corrAns}</b><br><br><b>Pembahasan:</b><br>${qData.exp}`, false);
+        }
+        
+        updateTopBar();
+        saveState();
+    }
+
+    function showComboAnim(multiplier) {
+        const popup = document.getElementById('combo-popup');
+        popup.innerText = `COMBO x${multiplier}!`;
+        popup.classList.add('show');
+        setTimeout(() => popup.classList.remove('show'), 1000);
+    }
+
+    function showFeedback(title, text, isCorrect) {
+        const m = document.getElementById('modal-feedback');
+        document.getElementById('fb-icon').innerText = isCorrect ? '🎉' : '💡';
+        document.getElementById('fb-title').innerText = title;
+        document.getElementById('fb-title').style.color = isCorrect ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('fb-text').innerHTML = text;
+        
+        const btn = document.getElementById('btn-next-question');
+        btn.onclick = () => {
+            sounds.click();
+            m.classList.remove('active');
+            if (gs.lives <= 0) {
+                document.getElementById('modal-gameover').classList.add('active');
+            } else {
+                qIndex++;
+                loadQuestion();
+            }
+        };
+        m.classList.add('active');
+    }
+
+    function backToMap() {
+        sounds.click();
+        document.getElementById('modal-gameover').classList.remove('active');
+        document.getElementById('modal-island-complete').classList.remove('active');
+        showScreen('map-screen');
+        renderMap();
+        updateTopBar();
+    }
+
+    function completeIsland() {
+        sounds.win();
+        const isl = islandsData.find(i => i.id === gs.currentIsland);
+        
+        let bonusCoins = 50;
+        gs.coins += bonusCoins;
+        gs.score += 200;
+        
+        if (!gs.collection.includes(isl.reward)) gs.collection.push(isl.reward);
+        
+        if (gs.currentIsland === gs.unlockedIslands && gs.unlockedIslands < 5) {
+            gs.unlockedIslands++;
+        }
+
+        saveState();
+        
+        if (gs.currentIsland === 5) {
+            finishGame();
+        } else {
+            document.getElementById('island-reward').innerText = isl.reward;
+            document.getElementById('island-bonus').innerText = `+200 Poin | +${bonusCoins} Koin`;
+            document.getElementById('modal-island-complete').classList.add('active');
+        }
+    }
+
+    function finishGame() {
+        saveLeaderboard();
+        showScreen('result-screen');
+        
+        document.getElementById('res-name').innerText = gs.name;
+        document.getElementById('res-kelas').innerText = `${gs.no} / ${gs.kelas}`;
+        document.getElementById('res-score').innerText = gs.score;
+        document.getElementById('res-coins').innerText = gs.coins;
+        document.getElementById('res-correct').innerText = gs.correct;
+        document.getElementById('res-wrong').innerText = gs.wrong;
+        document.getElementById('res-collection').innerText = gs.collection.join(' ');
+        
+        // Predikat
+        const totalQ = gs.correct + gs.wrong;
+        const acc = (gs.correct / totalQ) * 100;
+        let predikat = "JANGAN MENYERAH!";
+        if(acc >= 90) predikat = "🏆 MASTER MATEMATIKA";
+        else if(acc >= 80) predikat = "🥇 PETUALANG HEBAT";
+        else if(acc >= 70) predikat = "🥈 PETUALANG CERDAS";
+        else if(acc >= 60) predikat = "🥉 PETUALANG PEMULA";
+        
+        document.getElementById('res-predikat').innerText = predikat;
+    }
+
+    /** --- 6. POWER UPS --- */
+    function usePowerup(type) {
+        if(gs.powerups[type] <= 0 || isTransitioning) return;
+        sounds.click();
+        
+        if(type === 'compass') {
+            const qData = currentQuestions[qIndex];
+            if(qData.type !== 'mcq') return alert('Hanya bisa digunakan pada Pilihan Ganda!');
+            gs.powerups.compass--;
+            const btns = document.querySelectorAll('.option-btn');
+            let hidden = 0;
+            btns.forEach(btn => {
+                if(btn.innerText !== qData.answer && hidden < 2) {
+                    btn.classList.add('wrong-hidden');
+                    hidden++;
+                }
+            });
+        }
+        else if(type === 'time') {
+            gs.powerups.time--;
+            timeLeft += 15;
+            if(timeLeft > 30) timeLeft = 30; // Max
+            document.getElementById('game-timer-bar').style.background = '#3498db'; // visual cue
+        }
+        else if(type === 'coin') {
+            gs.powerups.coin--;
+            doubleCoinActive = true;
+            document.getElementById('game-coins').style.color = '#fbc531';
+        }
+        else if(type === 'life') {
+            if(gs.lives >= 3) return alert('Nyawa sudah penuh!');
+            gs.powerups.life--;
+            gs.lives++;
+        }
+        
+        updateTopBar();
+        saveState();
+    }
+
+    /** --- 7. LEADERBOARD & UTILS --- */
+    function saveLeaderboard() {
+        let lb = JSON.parse(localStorage.getItem('mathTreasureLB') || '[]');
+        lb.push({name: gs.name, kelas: gs.kelas, score: gs.score});
+        lb.sort((a,b) => b.score - a.score);
+        lb = lb.slice(0, 10); // Keep top 10
+        localStorage.setItem('mathTreasureLB', JSON.stringify(lb));
+    }
+
+    function showLeaderboard() {
+        sounds.click();
+        const lb = JSON.parse(localStorage.getItem('mathTreasureLB') || '[]');
+        const c = document.getElementById('lb-container');
+        c.innerHTML = lb.length === 0 ? '<p>Belum ada data.</p>' : '';
+        lb.forEach((entry, i) => {
+            c.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #ccc;">
+                <span><b>${i+1}.</b> ${entry.name} (${entry.kelas})</span>
+                <span style="color:var(--primary); font-weight:bold;">${entry.score}</span>
+            </div>`;
+        });
+        showScreen('leaderboard-screen');
+    }
+    
+    function hideLeaderboard() {
+        sounds.click();
+        initApp(); // Back to where we were based on state
+    }
+
+    function resetProgress() {
+        if(confirm('Yakin ingin mereset semua progress? Data tidak bisa dikembalikan.')) {
+            localStorage.removeItem('mathTreasureState');
+            location.reload();
+        }
+    }
+
+    // Start App
+    window.onload = initApp;
+
+</script>
+</body>
+</html>
